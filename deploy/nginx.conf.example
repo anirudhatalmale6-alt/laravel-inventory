@@ -1,0 +1,45 @@
+server {
+    listen 80;
+    listen [::]:80;
+    server_name __DOMAIN__ www.__DOMAIN__;
+
+    # Laravel serves from public/, never from the project root.
+    root __APP_DIR__/public;
+    index index.php;
+
+    charset utf-8;
+    client_max_body_size 20M;
+
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt  { access_log off; log_not_found off; }
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        fastcgi_param DOCUMENT_ROOT $realpath_root;
+        include fastcgi_params;
+    }
+
+    # Nothing under a dot is ever a page. .env lives one level up anyway, but
+    # this stops .git and friends being served if the root is ever moved.
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+
+    location ~* \.(css|js|jpg|jpeg|png|gif|svg|woff2?)$ {
+        expires 1y;
+        access_log off;
+        add_header Cache-Control "public, immutable";
+    }
+
+    error_page 404 /index.php;
+}
